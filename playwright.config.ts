@@ -26,7 +26,7 @@ export default defineConfig({
   reporter: [
     ['junit', { outputFile: '/Users/hoderez/Documents/FireCracker/xml_reports/PlayWright_results.xml' }],
     ['html'],
-    ['./PractiTestReporter']
+    ['./practitestReporter']
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
