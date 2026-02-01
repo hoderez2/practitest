@@ -24,7 +24,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['junit', { outputFile: '/Users/hoderez/Documents/FireCracker/xml_reports/PlayWright_results.xml' }],
+    ['junit', { outputFile: "test-results/PlayWright_results.xml" }],
     ['html'],
     ['./practitestReporter']
   ],
