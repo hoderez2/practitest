@@ -41,7 +41,21 @@ test('Help Link', {
   await expect(page.getByRole('heading', { name: 'How can we help?' })).toBeVisible();
 });
 
+test('Login without parameters', {
+}, async ({ page }) => {
+  
+  await page.goto('https://www.practitest.com/api-v2/');
+  await expect(page.getByRole('img', { name: 'PractiTest Logo' })).toBeVisible();
+});
+
 test('API Help Page Via our Help', {
+}, async ({ page }) => {
+  
+  await page.goto('https://www.practitest.com/api-v2/');
+  await expect(page.getByRole('img', { name: 'PractiTest Logo' })).toBeVisible();
+});
+
+test('Valid login', {
 }, async ({ page }) => {
   
   await page.goto('https://www.practitest.com/api-v2/');

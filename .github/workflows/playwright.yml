@@ -8,6 +8,11 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+      PRACTITEST_PROJECT_ID: ${{ secrets.PRACTITEST_PROJECT_ID }}
+      PRACTITEST_PLAYWRIGHT_SET_ID: ${{ secrets.PRACTITEST_PLAYWRIGHT_SET_ID }}
+      PRACTITEST_EMAIL: ${{ secrets.PRACTITEST_EMAIL }}
+      PRACTITEST_TOKEN: ${{ secrets.PRACTITEST_TOKEN }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
