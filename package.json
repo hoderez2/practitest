@@ -1,10 +1,21 @@
 {
-  "name": "playwright",
+  "name": "playwright-practitest-example",
   "version": "1.0.0",
-  "description": "",
+  "description": "Example project showing how to integrate Playwright with PractiTest using the auto_create API and screenshot attachments",
   "main": "index.js",
-  "scripts": {},
-  "keywords": [],
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:demo": "playwright test tests/example.spec.ts",
+    "report": "playwright show-report"
+  },
+  "keywords": [
+    "playwright",
+    "practitest",
+    "api",
+    "automation",
+    "testing"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

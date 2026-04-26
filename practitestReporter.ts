@@ -1,66 +1,105 @@
-// practitestReporter.ts
-import type {
-  Reporter,
-  TestCase,
-  TestResult,
-} from "@playwright/test/reporter";
+import * as fs from "fs";
+import * as path from "path";
+import type { Reporter, TestCase, TestResult } from "@playwright/test/reporter";
+import { autoCreateRun, getConfig } from "./practitestClient";
 
-import {
-  getOrCreateTestByName,
-  getOrCreateInstance,
-  createRunForInstance,
-} from "./practitestClient";
+type PractiTestAttachment = {
+  filename: string;
+  content_encoded: string;
+};
 
-function mapStatus(status: TestResult["status"]): "PASSED" | "FAILED" | "NO RUN" {
-  if (status === "passed") return "PASSED";
-  if (status === "failed") return "FAILED";
-  // covers "skipped", "timedOut", "interrupted"
-  return "NO RUN";
+function toRunDuration(ms = 0): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+function getTestName(test: TestCase): string {
+  return test.titlePath().filter((part) => part && !part.endsWith(".spec.ts")).join(" ");
+}
+
+function getExitCode(status: TestResult["status"]): number {
+  return status === "passed" ? 0 : 1;
+}
+
+function buildExecutionOutput(test: TestCase, result: TestResult): string {
+  const testName = getTestName(test);
+
+  if (result.status === "passed") {
+    return `Playwright test passed: ${testName}`;
+  }
+
+  const parts = [
+    `Playwright test failed: ${testName}`,
+    `Status: ${result.status}`,
+    `Duration: ${result.duration} ms`,
+  ];
+
+  if (result.error?.message) parts.push(`Error: ${result.error.message}`);
+  if (result.error?.stack) parts.push(`Stack:\n${result.error.stack}`);
+
+  return parts.join("\n\n");
+}
+
+function fileToAttachment(filePath: string): PractiTestAttachment | null {
+  if (!fs.existsSync(filePath)) return null;
+
+  return {
+    filename: path.basename(filePath),
+    content_encoded: fs.readFileSync(filePath).toString("base64"),
+  };
 }
 
 export default class PractiTestReporter implements Reporter {
   async onTestEnd(test: TestCase, result: TestResult) {
-    const title = test.title;
-    const ptStatus = mapStatus(result.status);
+    if (!["passed", "failed", "timedOut", "interrupted"].includes(result.status)) {
+      return;
+    }
 
-    const attachments = result.attachments || [];
+    const cfg = getConfig();
+    const testName = getTestName(test);
+    const attachments =
+      result.status !== "passed"
+        ? result.attachments
+            .filter((attachment) => attachment.path)
+            .map((attachment) => fileToAttachment(attachment.path!))
+            .filter((attachment): attachment is PractiTestAttachment => Boolean(attachment))
+        : [];
 
-    const filesToAttach = attachments
-    .filter(a => a.path)
-    .map(a => ({
-        name: a.name,
-        path: a.path!,
-        contentType: a.contentType,
-    }));
-
-
-    const parts: string[] = [
-      `Playwright test: ${title}`,
-      `Status: ${result.status}`,
-      `Duration: ${result.duration} ms`,
-    ];
-
-    if (result.error?.message) parts.push(`Error: ${result.error.message}`);
-    if (result.error?.stack) parts.push(`Stack:\n${result.error.stack}`);
-
-    const comment = parts.join("\n");
+    const payload = {
+      data: {
+        type: "instances",
+        attributes: {
+          "set-id": Number(cfg.setId),
+          "exit-code": getExitCode(result.status),
+          "run-duration": toRunDuration(result.duration),
+          "automated-execution-output": buildExecutionOutput(test, result),
+        },
+        "test-attributes": {
+          name: testName,
+          "custom-fields": {
+            "---f-278185": "Automated",
+          },
+        },
+        ...(attachments.length > 0
+          ? {
+              files: {
+                data: attachments,
+              },
+            }
+          : {}),
+      },
+    };
 
     try {
-      const testId = await getOrCreateTestByName(title);
-      const instanceId = await getOrCreateInstance(testId);
-
-      //console.log("PW duration ms:", result.duration, "type:", typeof result.duration);
-
-      const attachmentPaths =
-        result.attachments
-            ?.filter((a) => a.path)
-            .map((a) => a.path!) ?? [];
-
-    const runId = await createRunForInstance(instanceId, ptStatus, result.duration, comment,attachmentPaths);
-
-    } catch (e) {
-      // Do not fail the whole Playwright run because reporting failed
-      console.error("Failed to report result to PractiTest:", e);
+      await autoCreateRun(payload);
+      console.log(`PractiTest run created: ${testName}`);
+    } catch (error) {
+      console.error("PractiTest reporting failed:");
+      console.error(error);
+      throw error;
     }
   }
 }

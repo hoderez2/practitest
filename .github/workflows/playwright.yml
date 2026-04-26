@@ -10,10 +10,11 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
-      PRACTITEST_PROJECT_ID: ${{ secrets.PRACTITEST_PROJECT_ID }}
-      PRACTITEST_PLAYWRIGHT_SET_ID: ${{ secrets.PRACTITEST_PLAYWRIGHT_SET_ID }}
-      PRACTITEST_EMAIL: ${{ secrets.PRACTITEST_EMAIL }}
-      PRACTITEST_TOKEN: ${{ secrets.PRACTITEST_TOKEN }}
+      PT_BASE_URL: https://api.practitest.com
+      PT_PROJECT_ID: ${{ secrets.PT_PROJECT_ID }}
+      PT_SET_ID: ${{ secrets.PT_SET_ID }}
+      PT_EMAIL: ${{ secrets.PT_EMAIL }}
+      PT_TOKEN: ${{ secrets.PT_TOKEN }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -24,7 +25,7 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
-      run: npx playwright test
+      run: npm test
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
